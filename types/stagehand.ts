@@ -7,7 +7,7 @@ import { AvailableModel, ClientOptions } from "./model";
 import { LLMClient } from "../lib/llm/LLMClient";
 
 export interface ConstructorParams {
-  env: "LOCAL" | "BROWSERBASE";
+  env: "LOCAL" | "BROWSERBASE" | "REMOTE";
   apiKey?: string;
   projectId?: string;
   verbose?: 0 | 1 | 2;
@@ -17,6 +17,7 @@ export interface ConstructorParams {
   logger?: (message: LogLine) => void | Promise<void>;
   domSettleTimeoutMs?: number;
   browserbaseSessionCreateParams?: Browserbase.Sessions.SessionCreateParams;
+  cdpUrl?: string;
   enableCaching?: boolean;
   browserbaseSessionID?: string;
   modelName?: AvailableModel;
