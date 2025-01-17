@@ -14,7 +14,6 @@ const ModelNames = [
   "o1-mini",
   "o1-preview",
 ] as const;
-type ModelName = (typeof ModelNames)[number];
 
 // Define request body schema
 const RequestSchema = z.object({
