@@ -1,5 +1,5 @@
 # Use Node.js LTS (Long Term Support) image as base
-FROM node:20-slim
+FROM --platform=linux/amd64 node:20-slim
 
 # Set working directory in container
 WORKDIR /app

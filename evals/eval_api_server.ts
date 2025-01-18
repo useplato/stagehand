@@ -98,6 +98,19 @@ app.post("/test", async (_req, res) => {
   }
 });
 
+app.get("/version", (req, res) => {
+  res.json({
+    version: "v0.1",
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
