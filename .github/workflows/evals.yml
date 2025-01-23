@@ -1,0 +1,27 @@
+name: Plato Evaluations
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  plato-evaluations:
+    name: Plato Evaluations
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Send the PR details to your server
+      - name: Notify Plato Evaluations Server
+        run: |
+          curl -X POST https://589e-50-247-111-133.ngrok-free.app/api/webhooks/github-ci \
+          -H "Content-Type: application/json" \
+          -d '{
+            "repo": "${{ github.repository }}",
+            "pr_number": "${{ github.event.pull_request.number }}",
+            "head_sha": "${{ github.event.pull_request.head.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "clone_url": "${{ github.event.pull_request.head.repo.clone_url }}"
+          }'
