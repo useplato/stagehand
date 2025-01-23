@@ -15,13 +15,7 @@ jobs:
     steps:
       # Step 1: Send the PR details to your server
       - name: Start Plato Evaluations Server
-        run: |
-          curl -X POST https://589e-50-247-111-133.ngrok-free.app/api/webhooks/github-ci \
-          -H "Content-Type: application/json" \
-          -d '{
-            "repo": "${{ github.repository }}",
-            "pr_number": "${{ github.event.pull_request.number }}",
-            "head_sha": "${{ github.event.pull_request.head.sha }}",
-            "branch": "${{ github.ref_name }}",
-            "clone_url": "${{ github.event.pull_request.head.repo.clone_url }}"
-          }'
+        uses: useplato/action@main
+        with:
+          api-key: ${{ secrets.PLATO_API_KEY }}
+          test-case-set-id: 57033023-5ddd-46a7-97d1-eb509785ef9c
