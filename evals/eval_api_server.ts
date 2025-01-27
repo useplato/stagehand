@@ -29,7 +29,27 @@ const app = express();
 
 app.use(express.json());
 
+app.post("/init", async (_req, res) => {
+  const {stagehand} = await initStagehand({
+    modelName: "gpt-4o",
+    logger: new EvalLogger(),
+    configOverrides: {
+      env: "REMOTE",
+      cdpUrl: _req.body.cdp_url,
+      debugDom: false,
+    },
+  });
+
+  await stagehand.page.goto("https://www.google.com");
+  console.log("init done");
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.post("/test", async (_req, res) => {
+  console.log("test");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -60,8 +80,11 @@ app.post("/test", async (_req, res) => {
       },
     });
 
-    res.write('data: {"message": "Navigating to page"}\n\n');
-    await stagehand.page.goto(startUrl);
+    // res.write('data: {"message": "Navigating to page"}\n\n');
+    // await stagehand.page.goto(startUrl);
+
+    // Inject the processDom function and related utilities into the current page
+    res.write('data: {"message": "Injecting processDom function"}\n\n');
 
     res.write('data: {"message": "Executing command"}\n\n');
     let output;
@@ -89,6 +112,9 @@ app.post("/test", async (_req, res) => {
 
     res.end();
   } catch (error) {
+    // print error and stack trace
+    console.error(error);
+    console.error(error.stack);
     res.write(
       'data: {"message": "Error", "error": ' +
         JSON.stringify({ message: error.message }) +
