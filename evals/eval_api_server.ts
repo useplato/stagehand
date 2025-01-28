@@ -20,7 +20,7 @@ const RequestSchema = z.object({
   command: z.string().describe("The instruction or command to execute"),
   start_url: z.string().url().describe("Starting URL to navigate to"),
   cdp_url: z.string().url().describe("Chrome DevTools Protocol URL"),
-  output_schema: z.record(z.any()).optional().describe("The schema to output"),
+  output_schema: z.record(z.any()).nullable().optional().describe("The schema to output"),
   mode: z.enum(["actions", "output"]).describe("The mode to run in"),
   model_name: z.enum(ModelNames).default("gpt-4o").describe("The model to use"),
 });
