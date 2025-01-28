@@ -30,26 +30,35 @@ const app = express();
 app.use(express.json());
 
 app.post("/init", async (_req, res) => {
-  const {stagehand} = await initStagehand({
-    modelName: "gpt-4o",
-    logger: new EvalLogger(),
-    configOverrides: {
-      env: "REMOTE",
-      cdpUrl: _req.body.cdp_url,
-      debugDom: false,
-    },
-  });
+  try {
+    await initStagehand({
+      modelName: "gpt-4o",
+      logger: new EvalLogger(),
+      configOverrides: {
+        env: "REMOTE",
+        cdpUrl: _req.body.cdp_url,
+        debugDom: false,
+      },
+    });
 
-  await stagehand.page.goto("https://www.google.com");
-  console.log("init done");
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-  });
+    // await stagehand.page.goto("https://www.google.com");
+    console.log("init done");
+    res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+      });
+  } catch (error) {
+    console.error(error);
+    console.error(error.stack);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 });
 
 app.post("/test", async (_req, res) => {
-  console.log("test");
+  try {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -122,6 +131,16 @@ app.post("/test", async (_req, res) => {
     );
     res.end();
   }
+} catch (err) {
+  console.error(err);
+  console.error(err.stack);
+  res.write(
+    'data: {"message": "Error", "error": ' +
+      JSON.stringify({ message: err.message }) +
+      "}\n\n",
+  );
+  res.end();
+}
 });
 
 app.get("/version", (req, res) => {
