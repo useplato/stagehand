@@ -2,6 +2,7 @@ import express from "express";
 import { z } from "zod";
 import { initStagehand } from "./initStagehand";
 import { EvalLogger } from "./logger";
+import jsonSchemaToZod from "json-schema-to-zod";
 
 // At the top of the file, add this type
 const ModelNames = [
@@ -20,7 +21,7 @@ const RequestSchema = z.object({
   command: z.string().describe("The instruction or command to execute"),
   start_url: z.string().url().describe("Starting URL to navigate to"),
   cdp_url: z.string().url().describe("Chrome DevTools Protocol URL"),
-  output_schema: z.record(z.any()).nullable().optional().describe("The schema to output"),
+  output_schema: z.record(z.any()).nullable().describe("The schema to output in the format of a Draft7 JSON Schema"),
   mode: z.enum(["actions", "output"]).describe("The mode to run in"),
   model_name: z.enum(ModelNames).default("gpt-4o").describe("The model to use"),
 });
@@ -74,9 +75,11 @@ app.post("/test", async (_req, res) => {
       model_name: modelName,
     } = RequestSchema.parse(_req.body);
 
+
     console.log("command", command);
     console.log("startUrl", startUrl);
     console.log("cdpUrl", cdpUrl);
+    console.log("outputSchema", outputSchema);
 
     const logger = new EvalLogger();
     const { stagehand } = await initStagehand({
@@ -102,11 +105,10 @@ app.post("/test", async (_req, res) => {
         action: command,
       });
     } else {
+      const zodSchema = eval(jsonSchemaToZod(outputSchema, { module: "cjs" }));
       output = await stagehand.page.extract({
         instruction: command,
-        schema: z.object({
-          schema: z.string().describe(JSON.stringify(outputSchema)),
-        }),
+        schema: zodSchema,
         modelName: modelName,
         useTextExtract: true,
       });
@@ -160,7 +162,7 @@ app.get("/health", (req, res) => {
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Global error handler caught:', err);
   console.error(err.stack);
-  
+
   // Don't send error details in production
   res.status(500).json({
     status: 'error',

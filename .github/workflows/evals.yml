@@ -18,5 +18,4 @@ jobs:
         uses: useplato/action@main
         with:
           api-key: ${{ secrets.PLATO_API_KEY }}
-          base-url: https://589e-50-247-111-133.ngrok-free.app
-          test-case-set-id: 57033023-5ddd-46a7-97d1-eb509785ef9c
+          test-case-set-id: d6407582-1592-4e7b-a776-9bf9356e33ae
