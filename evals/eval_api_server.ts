@@ -156,6 +156,29 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Global error handling middleware
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Global error handler caught:', err);
+  console.error(err.stack);
+  
+  // Don't send error details in production
+  res.status(500).json({
+    status: 'error',
+    message: 'An internal server error occurred'
+  });
+});
+
+// Catch unhandled rejections and exceptions
+process.on('unhandledRejection', (reason: any) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (error: Error) => {
+  console.error('Uncaught Exception:', error);
+  // Gracefully shutdown if needed
+  // process.exit(1);
+});
+
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
