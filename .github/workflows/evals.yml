@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Send the PR details to your server
       - name: Start Plato Evaluations Server
         uses: useplato/action@main
         with:
