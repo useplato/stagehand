@@ -10,12 +10,12 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Copy the rest of the application code
+COPY . .
+
 RUN npm run build-dom-scripts
 RUN npm run build-js
 RUN npm run build-types
-
-# Copy the rest of the application code
-COPY . .
 
 # Expose the port your server will run on (adjust if needed)
 EXPOSE 3000

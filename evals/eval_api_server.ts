@@ -43,7 +43,7 @@ app.use(express.json());
 app.post("/init", async (_req, res) => {
   try {
     await initStagehand({
-      modelName: "gpt-4o",
+      modelName: "gpt-4o-mini",
       logger: new EvalLogger(),
       configOverrides: {
         env: "REMOTE",
@@ -93,7 +93,7 @@ app.post("/test", async (_req, res) => {
 
     const logger = new EvalLogger();
     const { stagehand } = await initStagehand({
-      modelName: "gpt-4o",
+      modelName: "gpt-4o-mini",
       logger,
       configOverrides: {
         env: "REMOTE",
