@@ -29,6 +29,11 @@ const RequestSchema = z.object({
 
 const app = express();
 
+app.use((req, res, next) => {
+  console.log('got request!!', "req.url", req.url, 'req.method', req.method);
+  next();
+});
+
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST"],
