@@ -10,6 +10,10 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+RUN npm run build-dom-scripts
+RUN npm run build-js
+RUN npm run build-types
+
 # Copy the rest of the application code
 COPY . .
 
@@ -17,5 +21,4 @@ COPY . .
 EXPOSE 3000
 
 # Start the server
-CMD npm run build-dom-scripts && npm run build-js && npm run build-types && \
-	npx tsx evals/eval_api_server.ts
+CMD npx tsx evals/eval_api_server.ts
