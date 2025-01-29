@@ -17,5 +17,5 @@ COPY . .
 EXPOSE 3000
 
 # Start the server
-CMD npm run build && \
-	npx tsx evals/eval_api_server.ts 
+CMD npm run build-dom-scripts && npm run build-js && npm run build-types && \
+	npx tsx evals/eval_api_server.ts
