@@ -29,7 +29,10 @@ const RequestSchema = z.object({
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+}));
 app.use(express.json());
 
 app.post("/init", async (_req, res) => {
