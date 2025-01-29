@@ -3,6 +3,7 @@ import { z } from "zod";
 import { initStagehand } from "./initStagehand";
 import { EvalLogger } from "./logger";
 import jsonSchemaToZod from "json-schema-to-zod";
+import cors from "cors";
 
 // At the top of the file, add this type
 const ModelNames = [
@@ -28,6 +29,7 @@ const RequestSchema = z.object({
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 app.post("/init", async (_req, res) => {
