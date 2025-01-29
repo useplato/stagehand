@@ -18,4 +18,4 @@ jobs:
         uses: useplato/action@main
         with:
           api-key: ${{ secrets.PLATO_API_KEY }}
-          test-case-set-id: d6407582-1592-4e7b-a776-9bf9356e33ae
+          test-case-set-id: eacdd59b-735a-4fe4-8772-65c310857370
