@@ -3,43 +3,32 @@ import { z } from "zod";
 import { initStagehand } from "./initStagehand";
 import { EvalLogger } from "./logger";
 import jsonSchemaToZod from "json-schema-to-zod";
-import cors from "cors";
-
-// At the top of the file, add this type
-const ModelNames = [
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4o-2024-08-06",
-  "claude-3-5-sonnet-latest",
-  "claude-3-5-sonnet-20241022",
-  "claude-3-5-sonnet-20240620",
-  "o1-mini",
-  "o1-preview",
-] as const;
+import { AvailableModelSchema } from "../lib";
 
 // Define request body schema
 const RequestSchema = z.object({
   command: z.string().describe("The instruction or command to execute"),
   start_url: z.string().url().describe("Starting URL to navigate to"),
   cdp_url: z.string().url().describe("Chrome DevTools Protocol URL"),
-  output_schema: z.record(z.any()).nullable().describe("The schema to output in the format of a Draft7 JSON Schema"),
+  output_schema: z
+    .record(z.any())
+    .nullable()
+    .describe("The schema to output in the format of a Draft7 JSON Schema"),
   mode: z.enum(["actions", "output"]).describe("The mode to run in"),
-  model_name: z.enum(ModelNames).default("gpt-4o").describe("The model to use"),
+  model_name:
+    AvailableModelSchema.default("gpt-4o").describe("The model to use"),
 });
 
 const app = express();
 
-app.use((req, res, next) => {
-  console.log('got request!!', "req.url", req.url, 'req.method', req.method);
-  next();
-});
-
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST"],
-}));
 app.use(express.json());
 
+/**
+ * Initialize a new Stagehand instance with default configuration. Necessary so stagehand scripts are injected before page is setup
+ * @route POST /init
+ * @param {string} _req.body.cdp_url - Chrome DevTools Protocol URL to connect to
+ * @throws {Error} Returns 500 status code if initialization fails
+ */
 app.post("/init", async (_req, res) => {
   try {
     await initStagehand({
@@ -52,14 +41,11 @@ app.post("/init", async (_req, res) => {
       },
     });
 
-    // await stagehand.page.goto("https://www.google.com");
-    console.log("init done");
     res.json({
-        status: "ok",
-        timestamp: new Date().toISOString(),
-      });
+      status: "ok",
+      timestamp: new Date().toISOString(),
+    });
   } catch (error) {
-    console.error(error);
     console.error(error.stack);
     res.status(500).json({
       status: "error",
@@ -68,91 +54,92 @@ app.post("/init", async (_req, res) => {
   }
 });
 
+/**
+ * Run a Stagehand test with the given command and parameters
+ * @route POST /test
+ * @param {string} _req.body.command - The instruction or command to execute
+ * @param {string} _req.body.cdp_url - Chrome DevTools Protocol URL
+ * @param {string} _req.body.output_schema - The schema to output in the format of a Draft7 JSON Schema
+ * @param {string} _req.body.mode - The mode to run in
+ * @param {string} _req.body.model_name - The model to use
+ * @returns {Stream} Server-sent event stream with status updates and final output
+ */
+
 app.post("/test", async (_req, res) => {
   try {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-  try {
-    // Validate request body
-    const {
-      command,
-      start_url: startUrl,
-      cdp_url: cdpUrl,
-      output_schema: outputSchema,
-      mode,
-      model_name: modelName,
-    } = RequestSchema.parse(_req.body);
+    try {
+      // Validate request body
+      const {
+        command,
+        cdp_url: cdpUrl,
+        output_schema: outputSchema,
+        mode,
+        model_name: modelName,
+      } = RequestSchema.parse(_req.body);
 
-
-    console.log("command", command);
-    console.log("startUrl", startUrl);
-    console.log("cdpUrl", cdpUrl);
-    console.log("outputSchema", outputSchema);
-
-    const logger = new EvalLogger();
-    const { stagehand } = await initStagehand({
-      modelName: "gpt-4o-mini",
-      logger,
-      configOverrides: {
-        env: "REMOTE",
-        cdpUrl,
-        debugDom: false,
-      },
-    });
-
-    // res.write('data: {"message": "Navigating to page"}\n\n');
-    // await stagehand.page.goto(startUrl);
-
-    // Inject the processDom function and related utilities into the current page
-    res.write('data: {"message": "Injecting processDom function"}\n\n');
-
-    res.write('data: {"message": "Executing command"}\n\n');
-    let output;
-    if (mode === "actions") {
-      output = await stagehand.page.act({
-        action: command,
+      const logger = new EvalLogger();
+      const { stagehand } = await initStagehand({
+        modelName: "gpt-4o-mini",
+        logger,
+        configOverrides: {
+          env: "REMOTE",
+          cdpUrl,
+          debugDom: false,
+        },
       });
-    } else {
-      const zodSchema = eval(jsonSchemaToZod(outputSchema, { module: "cjs" }));
-      output = await stagehand.page.extract({
-        instruction: command,
-        schema: zodSchema,
-        modelName: modelName,
-        useTextExtract: true,
-      });
+
+      res.write('data: {"message": "Injecting processDom function"}\n\n');
+
+      res.write('data: {"message": "Executing command"}\n\n');
+      let output;
+      if (mode === "actions") {
+        output = await stagehand.page.act({
+          action: command,
+        });
+      } else {
+        // turn the schema into a zod schema string. Ideally could pass in a JSON schema directly but doing this for now
+        const zodSchema = eval(
+          jsonSchemaToZod(outputSchema, { module: "cjs" }),
+        );
+        output = await stagehand.page.extract({
+          instruction: command,
+          schema: zodSchema,
+          modelName: modelName,
+          useTextExtract: true,
+        });
+      }
+
+      const data = {
+        type: "answer",
+        message: output,
+      };
+
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+      res.end();
+    } catch (error) {
+      // print error and stack trace
+      console.error(error.stack);
+      res.write(
+        'data: {"message": "Error", "error": ' +
+          JSON.stringify({ message: error.message }) +
+          "}\n\n",
+      );
+      res.end();
     }
-
-    const data = {
-      type: "answer",
-      message: output,
-    };
-
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-
-    res.end();
-  } catch (error) {
-    // print error and stack trace
-    console.error(error);
-    console.error(error.stack);
+  } catch (err) {
+    console.error(err.stack);
     res.write(
       'data: {"message": "Error", "error": ' +
-        JSON.stringify({ message: error.message }) +
+        JSON.stringify({ message: err.message }) +
         "}\n\n",
     );
     res.end();
   }
-} catch (err) {
-  console.error(err);
-  console.error(err.stack);
-  res.write(
-    'data: {"message": "Error", "error": ' +
-      JSON.stringify({ message: err.message }) +
-      "}\n\n",
-  );
-  res.end();
-}
 });
 
 app.get("/version", (req, res) => {
@@ -169,24 +156,24 @@ app.get("/health", (req, res) => {
 });
 
 // Global error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error handler caught:', err);
+app.use((err: Error, req: express.Request, res: express.Response) => {
+  console.error("Global error handler caught:", err);
   console.error(err.stack);
 
   // Don't send error details in production
   res.status(500).json({
-    status: 'error',
-    message: 'An internal server error occurred'
+    status: "error",
+    message: "An internal server error occurred",
   });
 });
 
 // Catch unhandled rejections and exceptions
-process.on('unhandledRejection', (reason: any) => {
-  console.error('Unhandled Rejection:', reason);
+process.on("unhandledRejection", (reason: unknown) => {
+  console.error("Unhandled Rejection:", reason);
 });
 
-process.on('uncaughtException', (error: Error) => {
-  console.error('Uncaught Exception:', error);
+process.on("uncaughtException", (error: Error) => {
+  console.error("Uncaught Exception:", error);
   // Gracefully shutdown if needed
   // process.exit(1);
 });
